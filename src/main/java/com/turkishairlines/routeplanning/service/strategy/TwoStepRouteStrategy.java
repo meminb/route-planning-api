@@ -1,0 +1,69 @@
+package com.turkishairlines.routeplanning.service.strategy;
+
+import com.turkishairlines.routeplanning.model.dto.RouteDTO;
+import com.turkishairlines.routeplanning.model.entity.Location;
+import com.turkishairlines.routeplanning.model.entity.Transportation;
+import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Component
+public class TwoStepRouteStrategy extends AbstractRouteStrategy {
+
+    public TwoStepRouteStrategy(TransportationJpaRepository transportationRepository) {
+        super(transportationRepository);
+    }
+
+    @Override
+    public List<RouteDTO> findRoutes(Location origin, Location destination, LocalDate date) {
+        log.debug("Finding two-step routes from {} to {}", origin.getLocationCode(), destination.getLocationCode());
+
+        List<RouteDTO> routes = new ArrayList<>();
+
+        // Get all transportations from origin
+        List<Transportation> fromOrigin = transportationRepository.findByOriginLocation(origin)
+                .stream()
+                .filter(t -> isTransportationValidForDate(t, date))
+                .collect(Collectors.toList());
+
+        // Get all transportations to destination
+        List<Transportation> toDestination = transportationRepository.findByDestinationLocation(destination)
+                .stream()
+                .filter(t -> isTransportationValidForDate(t, date))
+                .collect(Collectors.toList());
+
+        for (Transportation first : fromOrigin) {
+            for (Transportation second : toDestination) {
+                // Check if they are connected
+                if (first.getDestinationLocation().getId().equals(second.getOriginLocation().getId())) {
+                    List<Transportation> routeTransportations = Arrays.asList(first, second);
+
+                    if (isValidRoute(routeTransportations)) {
+                        routes.add(RouteDTO.builder()
+                                .originLocation(convertLocationToDTO(origin))
+                                .destinationLocation(convertLocationToDTO(destination))
+                                .transportations(routeTransportations.stream()
+                                        .map(this::convertTransportationToDTO)
+                                        .collect(Collectors.toList()))
+                                .totalTransportations(2)
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return routes;
+    }
+
+    @Override
+    public int getMaxTransportations() {
+        return 2;
+    }
+}

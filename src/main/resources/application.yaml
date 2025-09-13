@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/route_planning_db
+    username: postgres
+    password: postgres123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update   # dev a?amas?nda update, prod'da validate önerilir
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Swagger için path ayar? (opsiyonel)
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+# Testcontainers kullan?m? için ayr? profil
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15-alpine:///route_planning_db
+    username: postgres
+    password: postgres123
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop   # testlerde temiz ba?lamak için
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
