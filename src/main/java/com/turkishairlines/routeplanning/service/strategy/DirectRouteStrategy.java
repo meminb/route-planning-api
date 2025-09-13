@@ -29,7 +29,7 @@ public class DirectRouteStrategy extends AbstractRouteStrategy {
 
         return directTransportations.stream()
                 .filter(t -> isTransportationValidForDate(t, date))
-                .filter(t -> t.getTransportationType() == TransportationType.FLIGHT) // Direct route must be a flight
+                .filter(t -> t.getTransportationType() == TransportationType.FLIGHT)
                 .map(transport -> RouteDTO.builder()
                         .originLocation(convertLocationToDTO(origin))
                         .destinationLocation(convertLocationToDTO(destination))

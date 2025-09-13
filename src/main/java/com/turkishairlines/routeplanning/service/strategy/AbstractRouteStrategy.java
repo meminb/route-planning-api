@@ -22,17 +22,13 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
             return false;
         }
 
-        // Count transportation types
         long flightCount = transportations.stream()
                 .mapToLong(t -> t.getTransportationType() == TransportationType.FLIGHT ? 1 : 0)
                 .sum();
 
-        // Must have exactly one flight
         if (flightCount != 1) {
             return false;
         }
-
-        // Find flight position
         int flightIndex = -1;
         for (int i = 0; i < transportations.size(); i++) {
             if (transportations.get(i).getTransportationType() == TransportationType.FLIGHT) {
@@ -41,24 +37,16 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
             }
         }
 
-        // Validate route structure based on flight position
         if (transportations.size() == 1) {
-            // Single flight is valid
             return true;
         } else if (transportations.size() == 2) {
-            // Two transportations: either TRANSFER->FLIGHT or FLIGHT->TRANSFER
             return flightIndex == 0 || flightIndex == 1;
         } else if (transportations.size() == 3) {
-            // Three transportations: must be TRANSFER->FLIGHT->TRANSFER
             if (flightIndex != 1) {
                 return false;
             }
-
-            // Before flight transfer (must not be FLIGHT)
             TransportationType beforeFlight = transportations.get(0).getTransportationType();
-            // After flight transfer (must not be FLIGHT)
             TransportationType afterFlight = transportations.get(2).getTransportationType();
-
             return beforeFlight != TransportationType.FLIGHT && afterFlight != TransportationType.FLIGHT;
         }
 
@@ -68,10 +56,10 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
     protected boolean isTransportationValidForDate(Transportation transportation, LocalDate date) {
         if (date == null || transportation.getOperatingDays() == null
                 || transportation.getOperatingDays().length == 0) {
-            return true; // If no date specified or no operating days restriction, consider it valid
+            return true;
         }
 
-        int dayOfWeek = date.getDayOfWeek().getValue(); // Monday = 1, Sunday = 7
+        int dayOfWeek = date.getDayOfWeek().getValue(); // pzt = 1, pazar = 7
         return Arrays.stream(transportation.getOperatingDays())
                 .anyMatch(day -> day == dayOfWeek);
     }

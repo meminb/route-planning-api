@@ -1,74 +1,98 @@
 package com.turkishairlines.routeplanning.service.strategy;
 
 import com.turkishairlines.routeplanning.model.dto.RouteDTO;
+import com.turkishairlines.routeplanning.model.dto.TransportationDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
+import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
 import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 public class ThreeStepRouteStrategy extends AbstractRouteStrategy {
 
-    public ThreeStepRouteStrategy(TransportationJpaRepository transportationRepository) {
-        super(transportationRepository);
+    public ThreeStepRouteStrategy(TransportationJpaRepository repository) {
+        super(repository);
     }
 
     @Override
     public List<RouteDTO> findRoutes(Location origin, Location destination, LocalDate date) {
-        log.debug("Finding three-step routes from {} to {}", origin.getLocationCode(), destination.getLocationCode());
+        log.debug("3-step routes {} -> {}", origin.getLocationCode(), destination.getLocationCode());
+
+        List<Transportation> nonFlightTransfersFromOrigin =
+                transportationRepository.findByOriginLocationAndTransportationTypeNot(origin, TransportationType.FLIGHT)
+                        .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
+
+        List<Transportation> nonFlightTransfersToDestination =
+                transportationRepository.findByDestinationLocationAndTransportationTypeNot(destination, TransportationType.FLIGHT)
+                        .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
+
+        Set<Location> candidateFlightOriginHubs =
+                nonFlightTransfersFromOrigin.stream()
+                        .map(Transportation::getDestinationLocation)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (candidateFlightOriginHubs.isEmpty()) return List.of();
+
+        Set<Location> candidateFlightDestinationHubs =
+                nonFlightTransfersToDestination.stream()
+                        .map(Transportation::getOriginLocation)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (candidateFlightDestinationHubs.isEmpty()) return List.of();
+
+        List<Transportation> flightsBetweenCandidateHubs =
+                transportationRepository.findByTransportationTypeAndOriginLocationInAndDestinationLocationIn(
+                                TransportationType.FLIGHT, candidateFlightOriginHubs, candidateFlightDestinationHubs)
+                        .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
+
+        Map<Long, List<Transportation>> beforeTransfersByFlightOriginId =
+                nonFlightTransfersFromOrigin.stream()
+                        .collect(Collectors.groupingBy(t -> t.getDestinationLocation().getId()));
+
+        Map<Long, List<Transportation>> afterTransfersByFlightDestinationId =
+                nonFlightTransfersToDestination.stream()
+                        .collect(Collectors.groupingBy(t -> t.getOriginLocation().getId()));
 
         List<RouteDTO> routes = new ArrayList<>();
+        Set<String> routeSignatureSet = new HashSet<>();
 
-        // Get all transportations from origin
-        List<Transportation> fromOrigin = transportationRepository.findByOriginLocation(origin)
-                .stream()
-                .filter(t -> isTransportationValidForDate(t, date))
-                .toList();
+        for (Transportation flight : flightsBetweenCandidateHubs) {
+            Long flightOriginId = flight.getOriginLocation().getId();
+            Long flightDestinationId = flight.getDestinationLocation().getId();
 
-        for (Transportation first : fromOrigin) {
-            Location intermediateLocation1 = first.getDestinationLocation();
+            List<Transportation> beforeCandidates =
+                    beforeTransfersByFlightOriginId.getOrDefault(flightOriginId, List.of());
+            List<Transportation> afterCandidates =
+                    afterTransfersByFlightDestinationId.getOrDefault(flightDestinationId, List.of());
 
-            // Get transportations from first intermediate location
-            List<Transportation> fromIntermediate1 = transportationRepository
-                    .findByOriginLocation(intermediateLocation1)
-                    .stream()
-                    .filter(t -> isTransportationValidForDate(t, date))
-                    .collect(Collectors.toList());
+            for (Transportation beforeLeg : beforeCandidates) {
+                for (Transportation afterLeg : afterCandidates) {
+                    List<Transportation> legs = List.of(beforeLeg, flight, afterLeg);
+                    if (!isValidRoute(legs)) continue;
 
-            for (Transportation second : fromIntermediate1) {
-                Location intermediateLocation2 = second.getDestinationLocation();
+                    String signature = beforeLeg.getId() + "-" + flight.getId() + "-" + afterLeg.getId();
+                    if (!routeSignatureSet.add(signature)) continue;
 
-                // Get transportations from second intermediate location to destination
-                List<Transportation> toDestination = transportationRepository
-                        .findByOriginLocationAndDestinationLocation(intermediateLocation2, destination)
-                        .stream()
-                        .filter(t -> isTransportationValidForDate(t, date))
-                        .collect(Collectors.toList());
-
-                for (Transportation third : toDestination) {
-                    List<Transportation> routeTransportations = Arrays.asList(first, second, third);
-
-                    if (isValidRoute(routeTransportations)) {
-                        routes.add(RouteDTO.builder()
-                                .originLocation(convertLocationToDTO(origin))
-                                .destinationLocation(convertLocationToDTO(destination))
-                                .transportations(routeTransportations.stream()
-                                        .map(this::convertTransportationToDTO)
-                                        .collect(Collectors.toList()))
-                                .totalTransportations(3)
-                                .build());
-                    }
+                    routes.add(RouteDTO.builder()
+                            .originLocation(convertLocationToDTO(origin))
+                            .destinationLocation(convertLocationToDTO(destination))
+                            .transportations(legs.stream().map(this::convertTransportationToDTO).toList())
+                            .totalTransportations(3)
+                            .build());
                 }
             }
         }
+
+        routes.sort(Comparator.comparing(r ->
+                r.getTransportations().stream().map(TransportationDTO::getId).map(String::valueOf)
+                        .collect(Collectors.joining(","))));
 
         return routes;
     }

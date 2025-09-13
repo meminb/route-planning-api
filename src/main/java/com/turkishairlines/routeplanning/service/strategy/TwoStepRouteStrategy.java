@@ -27,21 +27,18 @@ public class TwoStepRouteStrategy extends AbstractRouteStrategy {
 
         List<RouteDTO> routes = new ArrayList<>();
 
-        // Get all transportations from origin
         List<Transportation> fromOrigin = transportationRepository.findByOriginLocation(origin)
                 .stream()
                 .filter(t -> isTransportationValidForDate(t, date))
-                .collect(Collectors.toList());
+                .toList();
 
-        // Get all transportations to destination
         List<Transportation> toDestination = transportationRepository.findByDestinationLocation(destination)
                 .stream()
                 .filter(t -> isTransportationValidForDate(t, date))
-                .collect(Collectors.toList());
+                .toList();
 
         for (Transportation first : fromOrigin) {
             for (Transportation second : toDestination) {
-                // Check if they are connected
                 if (first.getDestinationLocation().getId().equals(second.getOriginLocation().getId())) {
                     List<Transportation> routeTransportations = Arrays.asList(first, second);
 

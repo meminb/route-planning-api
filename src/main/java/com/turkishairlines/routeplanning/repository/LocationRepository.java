@@ -14,7 +14,4 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     Optional<Location> findByLocationCode(String locationCode);
 
     boolean existsByLocationCode(String locationCode);
-
-    @Query("SELECT l FROM Location l WHERE l.locationCode = :locationCode AND l.deletedAt IS NULL")
-    Optional<Location> findActiveByLocationCode(@Param("locationCode") String locationCode);
 }

@@ -1,8 +1,8 @@
 package com.turkishairlines.routeplanning.service;
 
-import com.turkishairlines.routeplanning.model.dto.LocationDTO;
 import com.turkishairlines.routeplanning.exception.DuplicateResourceException;
 import com.turkishairlines.routeplanning.exception.ResourceNotFoundException;
+import com.turkishairlines.routeplanning.model.dto.LocationDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.repository.LocationRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
