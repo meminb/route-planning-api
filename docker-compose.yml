@@ -18,7 +18,6 @@ services:
     networks:
       - route-planning-network
 
-  # PgAdmin (Database yönetimi için opsiyonel)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: route-planning-pgadmin

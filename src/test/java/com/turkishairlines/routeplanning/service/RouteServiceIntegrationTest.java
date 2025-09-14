@@ -7,7 +7,7 @@ import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
 import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
 import com.turkishairlines.routeplanning.repository.LocationRepository;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +40,7 @@ class RouteServiceIntegrationTest {
     private LocationRepository locationRepository;
 
     @Autowired
-    private TransportationJpaRepository transportationRepository;
+    private TransportationRepository transportationRepository;
 
     private Location istanbulLocation;
     private Location ankaraLocation;
@@ -88,18 +88,16 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should find direct routes between two locations")
     void shouldFindDirectRoutesBetweenTwoLocations() {
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ESB");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ESB", null);
 
         // Then
         assertThat(routes).isNotNull();
         assertThat(routes).isNotEmpty();
 
-        // Should find at least one direct route
         boolean hasDirectRoute = routes.stream()
                 .anyMatch(route -> route.getTotalTransportations() == 1);
         assertThat(hasDirectRoute).isTrue();
 
-        // Verify route details
         RouteDTO directRoute = routes.stream()
                 .filter(route -> route.getTotalTransportations() == 1)
                 .findFirst()
@@ -117,13 +115,12 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should find multi-step routes between two locations")
     void shouldFindMultiStepRoutesBetweenTwoLocations() {
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT", null);
 
         // Then
         assertThat(routes).isNotNull();
         assertThat(routes).isNotEmpty();
 
-        // Should find at least one route
         assertThat(routes.size()).isGreaterThan(0);
 
         // Verify route details
@@ -147,7 +144,6 @@ class RouteServiceIntegrationTest {
         assertThat(routes).isNotNull();
         assertThat(routes).isNotEmpty();
 
-        // All routes should be valid for the given date
         routes.forEach(route -> {
             assertThat(route.getOriginLocation().getLocationCode()).isEqualTo("IST");
             assertThat(route.getDestinationLocation().getLocationCode()).isEqualTo("ESB");
@@ -158,7 +154,7 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should throw ResourceNotFoundException when origin location not found")
     void shouldThrowResourceNotFoundExceptionWhenOriginLocationNotFound() {
         // When & Then
-        assertThatThrownBy(() -> routeService.findValidRoutes("INVALID", "ESB"))
+        assertThatThrownBy(() -> routeService.findValidRoutes("INVALID", "ESB", null))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Origin location not found with code: INVALID");
     }
@@ -167,7 +163,7 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should throw ResourceNotFoundException when destination location not found")
     void shouldThrowResourceNotFoundExceptionWhenDestinationLocationNotFound() {
         // When & Then
-        assertThatThrownBy(() -> routeService.findValidRoutes("IST", "INVALID"))
+        assertThatThrownBy(() -> routeService.findValidRoutes("IST", "INVALID", null))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Destination location not found with code: INVALID");
     }
@@ -176,7 +172,7 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should throw InvalidRouteException when origin and destination are the same")
     void shouldThrowInvalidRouteExceptionWhenOriginAndDestinationAreSame() {
         // When & Then
-        assertThatThrownBy(() -> routeService.findValidRoutes("IST", "IST"))
+        assertThatThrownBy(() -> routeService.findValidRoutes("IST", "IST", null))
                 .isInstanceOf(InvalidRouteException.class)
                 .hasMessage("Origin and destination cannot be the same location");
     }
@@ -184,11 +180,10 @@ class RouteServiceIntegrationTest {
     @Test
     @DisplayName("Should return empty list when no routes exist between locations")
     void shouldReturnEmptyListWhenNoRoutesExistBetweenLocations() {
-        // Given - Create isolated location with no connections
         Location isolatedLocation = createTestLocation("Isolated Airport", "Turkey", "Isolated", "ISO");
 
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ISO");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ISO", null);
 
         // Then
         assertThat(routes).isNotNull();
@@ -199,7 +194,7 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should find routes with different transportation types")
     void shouldFindRoutesWithDifferentTransportationTypes() {
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ADB");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "ADB", null);
 
         // Then
         assertThat(routes).isNotNull();
@@ -208,7 +203,6 @@ class RouteServiceIntegrationTest {
         // Should find at least one route
         assertThat(routes.size()).isGreaterThan(0);
 
-        // Verify all routes have valid transportation types
         routes.forEach(route -> {
             assertThat(route.getTransportations()).isNotEmpty();
             route.getTransportations().forEach(transport -> {
@@ -232,7 +226,6 @@ class RouteServiceIntegrationTest {
         assertThat(weekdayRoutes).isNotNull();
         assertThat(weekendRoutes).isNotNull();
 
-        // At least one should have routes available
         assertThat(weekdayRoutes.size() + weekendRoutes.size()).isGreaterThan(0);
     }
 
@@ -240,7 +233,7 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should find routes with complex multi-step connections")
     void shouldFindRoutesWithComplexMultiStepConnections() {
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT", null);
 
         // Then
         assertThat(routes).isNotNull();
@@ -249,7 +242,6 @@ class RouteServiceIntegrationTest {
         // Should find at least one route
         assertThat(routes.size()).isGreaterThan(0);
 
-        // Verify route descriptions
         routes.forEach(route -> {
             assertThat(route.getRouteDescription()).isNotNull();
             assertThat(route.getRouteDescription()).isNotEmpty();
@@ -279,13 +271,12 @@ class RouteServiceIntegrationTest {
     @DisplayName("Should find routes with mixed transportation types in multi-step routes")
     void shouldFindRoutesWithMixedTransportationTypesInMultiStepRoutes() {
         // When
-        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT");
+        List<RouteDTO> routes = routeService.findValidRoutes("IST", "AYT", null);
 
         // Then
         assertThat(routes).isNotNull();
         assertThat(routes).isNotEmpty();
 
-        // Should find at least one route
         assertThat(routes.size()).isGreaterThan(0);
 
         // Verify all routes have valid transportation types

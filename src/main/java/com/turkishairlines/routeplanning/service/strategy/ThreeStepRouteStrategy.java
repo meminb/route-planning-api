@@ -5,7 +5,7 @@ import com.turkishairlines.routeplanning.model.dto.TransportationDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
 import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Component
 public class ThreeStepRouteStrategy extends AbstractRouteStrategy {
 
-    public ThreeStepRouteStrategy(TransportationJpaRepository repository) {
+    public ThreeStepRouteStrategy(TransportationRepository repository) {
         super(repository);
     }
 
@@ -29,16 +29,16 @@ public class ThreeStepRouteStrategy extends AbstractRouteStrategy {
                 transportationRepository.findByOriginLocationAndTransportationTypeNot(origin, TransportationType.FLIGHT)
                         .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
 
-        List<Transportation> nonFlightTransfersToDestination =
-                transportationRepository.findByDestinationLocationAndTransportationTypeNot(destination, TransportationType.FLIGHT)
-                        .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
-
         Set<Location> candidateFlightOriginHubs =
                 nonFlightTransfersFromOrigin.stream()
                         .map(Transportation::getDestinationLocation)
                         .collect(Collectors.toCollection(LinkedHashSet::new));
 
         if (candidateFlightOriginHubs.isEmpty()) return List.of();
+
+        List<Transportation> nonFlightTransfersToDestination =
+                transportationRepository.findByDestinationLocationAndTransportationTypeNot(destination, TransportationType.FLIGHT)
+                        .stream().filter(t -> isTransportationValidForDate(t, date)).toList();
 
         Set<Location> candidateFlightDestinationHubs =
                 nonFlightTransfersToDestination.stream()

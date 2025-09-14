@@ -24,10 +24,6 @@ public class RouteService {
     private final LocationRepository locationRepository;
     private final List<RouteStrategy> routeStrategies;
 
-    public List<RouteDTO> findValidRoutes(String originLocationCode, String destinationLocationCode) {
-        return findValidRoutes(originLocationCode, destinationLocationCode, null);
-    }
-
     public List<RouteDTO> findValidRoutes(String originLocationCode, String destinationLocationCode, LocalDate date) {
         log.debug("Finding valid routes from {} to {} on date {}", originLocationCode, destinationLocationCode, date);
 

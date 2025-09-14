@@ -6,7 +6,7 @@ import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
 import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
 import com.turkishairlines.routeplanning.repository.LocationRepository;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +36,7 @@ class TransportationServiceIntegrationTest {
     private TransportationService transportationService;
 
     @Autowired
-    private TransportationJpaRepository transportationRepository;
+    private TransportationRepository transportationRepository;
 
     @Autowired
     private LocationRepository locationRepository;

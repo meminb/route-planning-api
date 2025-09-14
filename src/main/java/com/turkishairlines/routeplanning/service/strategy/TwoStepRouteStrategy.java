@@ -3,7 +3,7 @@ package com.turkishairlines.routeplanning.service.strategy;
 import com.turkishairlines.routeplanning.model.dto.RouteDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Component
 public class TwoStepRouteStrategy extends AbstractRouteStrategy {
 
-    public TwoStepRouteStrategy(TransportationJpaRepository transportationRepository) {
+    public TwoStepRouteStrategy(TransportationRepository transportationRepository) {
         super(transportationRepository);
     }
 

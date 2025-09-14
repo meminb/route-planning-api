@@ -4,7 +4,7 @@ import com.turkishairlines.routeplanning.model.dto.RouteDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
 import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 class TwoStepRouteStrategyTest {
 
         @Mock
-        private TransportationJpaRepository transportationRepository;
+        private TransportationRepository transportationRepository;
 
         private TwoStepRouteStrategy twoStepRouteStrategy;
 

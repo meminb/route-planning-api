@@ -5,7 +5,7 @@ import com.turkishairlines.routeplanning.model.dto.TransportationDTO;
 import com.turkishairlines.routeplanning.model.entity.Location;
 import com.turkishairlines.routeplanning.model.entity.Transportation;
 import com.turkishairlines.routeplanning.model.enumaration.TransportationType;
-import com.turkishairlines.routeplanning.repository.TransportationJpaRepository;
+import com.turkishairlines.routeplanning.repository.TransportationRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 
-    protected final TransportationJpaRepository transportationRepository;
+    protected final TransportationRepository transportationRepository;
 
     protected boolean isValidRoute(List<Transportation> transportations) {
         if (transportations.isEmpty() || transportations.size() > 3) {
@@ -37,20 +37,19 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
             }
         }
 
-        if (transportations.size() == 1) {
-            return true;
-        } else if (transportations.size() == 2) {
-            return flightIndex == 0 || flightIndex == 1;
-        } else if (transportations.size() == 3) {
-            if (flightIndex != 1) {
-                return false;
+        return switch (transportations.size()) {
+            case 1 -> true;
+            case 2 -> flightIndex == 0 || flightIndex == 1;
+            case 3 -> {
+                if (flightIndex != 1) {
+                    yield false;
+                }
+                TransportationType beforeFlight = transportations.get(0).getTransportationType();
+                TransportationType afterFlight = transportations.get(2).getTransportationType();
+                yield  beforeFlight != TransportationType.FLIGHT && afterFlight != TransportationType.FLIGHT;
             }
-            TransportationType beforeFlight = transportations.get(0).getTransportationType();
-            TransportationType afterFlight = transportations.get(2).getTransportationType();
-            return beforeFlight != TransportationType.FLIGHT && afterFlight != TransportationType.FLIGHT;
-        }
-
-        return false;
+            default -> false;
+        };
     }
 
     protected boolean isTransportationValidForDate(Transportation transportation, LocalDate date) {
